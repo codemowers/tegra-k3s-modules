@@ -9,6 +9,13 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - jetson_version: "36.4.3"
+          - jetson_version: "35.5.0"
+          - jetson_version: "35.3.1"
+
     steps:
       -
         name: Checkout
@@ -27,6 +34,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
+          file: Dockerfile.${{ matrix.jetson_version }}
           push: true
           platforms: linux/arm64
-          tags: codemowers/tegra-k3s-modules:latest
+          tags: codemowers/tegra-k3s-modules:v${{ matrix.jetson_version }}
