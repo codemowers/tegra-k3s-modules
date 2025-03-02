@@ -1,14 +1,7 @@
-ARG KERNEL_VERSION="5.15"
-ARG KERNEL_REVISION="148"
-
 FROM --platform=linux/amd64 ubuntu:22.04 AS build
-ARG KERNEL_VERSION
-ARG KERNEL_REVISION
-ARG UBUNTU_VERSION
-ARG PUBLIC_SOURCES
 WORKDIR /sdk
 RUN apt-get update -qq
-RUN apt-get install -yqq wget build-essential flex bison libssl-dev bc xxd rsync
+RUN apt-get install -yqq wget build-essential flex bison libssl-dev bc xxd rsync sudo
 RUN wget -q https://developer.download.nvidia.com/embedded/L4T/bootlin/aarch64--glibc--stable-final.tar.gz
 RUN tar xf aarch64--glibc--stable-final.tar.gz
 WORKDIR /src
@@ -24,11 +17,10 @@ ENV CROSS_COMPILE=/sdk/bin/aarch64-buildroot-linux-gnu-
 COPY tegra_defconfig_extra ./
 RUN cat tegra_defconfig_extra >> ./kernel/kernel-jammy-src/arch/arm64/configs/defconfig
 RUN ./nvbuild.sh
+ENV INSTALL_MOD_PATH=/target
+RUN mkdir -p /target/boot
+RUN ./nvbuild.sh -i
+RUN find /target
 
 FROM scratch AS final
-ARG KERNEL_VERSION
-ARG KERNEL_REVISION
-COPY --from=build /src/Linux_for_Tegra/source/kernel_out/kernel/kernel-jammy-src/net/netfilter/ipset/*.ko /lib/modules/${KERNEL_VERSION}.${KERNEL_REVISION}-tegra/kernel/net/netfilter/ipset/
-COPY --from=build /src/Linux_for_Tegra/source/kernel_out/kernel/kernel-jammy-src/net/netfilter/xt_nfacct.ko /lib/modules/${KERNEL_VERSION}.${KERNEL_REVISION}-tegra/kernel/net/netfilter/
-COPY --from=build /src/Linux_for_Tegra/source/kernel_out/kernel/kernel-jammy-src/net/sched/em_ipset.ko /lib/modules/${KERNEL_VERSION}.${KERNEL_REVISION}-tegra/kernel/net/sched/
-COPY --from=build /src/Linux_for_Tegra/source/kernel_out/kernel/kernel-jammy-src/fs/xfs/xfs.ko /lib/modules/${KERNEL_VERSION}.${KERNEL_REVISION}-tegra/kernel/fs/xfs/
+COPY --from=build /target/ /

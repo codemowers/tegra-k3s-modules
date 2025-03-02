@@ -1,10 +1,4 @@
-ARG KERNEL_VERSION="5.10"
-ARG KERNEL_REVISION="104"
-
 FROM --platform=linux/amd64 ubuntu:20.04 AS build
-ARG KERNEL_VERSION
-ARG KERNEL_REVISION
-ARG PUBLIC_SOURCES
 WORKDIR /sdk
 RUN apt-get update -qq
 RUN apt-get install -yqq wget build-essential flex bison libssl-dev bc xxd
@@ -19,13 +13,14 @@ RUN tar xf kernel_src.tbz2
 ENV CROSS_COMPILE_AARCH64_PATH=/sdk/aarch64-buildroot-linux-gnu
 ENV CROSS_COMPILE_AARCH64=/sdk/bin/aarch64-buildroot-linux-gnu-
 COPY tegra_defconfig_extra ./
-RUN cat tegra_defconfig_extra >> ./kernel/kernel-${KERNEL_VERSION}/arch/arm64/configs/tegra_defconfig
+RUN cat tegra_defconfig_extra >> ./kernel/kernel-5.10/arch/arm64/configs/tegra_defconfig
+RUN echo 'CONFIG_EFI=y' >> ./kernel/kernel-5.10/arch/arm64/configs/tegra_defconfig
 RUN ./nvbuild.sh
+ENV INSTALL_MOD_PATH=/target
+RUN mkdir -p /target/boot
+WORKDIR /src/Linux_for_Tegra/source/public/kernel/kernel-5.10
+RUN make modules_install
+RUN cp ./arch/arm64/boot/Image /target/boot/
 
 FROM scratch AS final
-ARG KERNEL_VERSION
-ARG KERNEL_REVISION
-COPY --from=build /src/Linux_for_Tegra/source/public/kernel/kernel-${KERNEL_VERSION}/net/netfilter/ipset/*.ko /lib/modules/${KERNEL_VERSION}.${KERNEL_REVISION}-tegra/kernel/net/netfilter/ipset/
-COPY --from=build /src/Linux_for_Tegra/source/public/kernel/kernel-${KERNEL_VERSION}/net/netfilter/xt_nfacct.ko /lib/modules/${KERNEL_VERSION}.${KERNEL_REVISION}-tegra/kernel/net/netfilter/
-COPY --from=build /src/Linux_for_Tegra/source/public/kernel/kernel-${KERNEL_VERSION}/net/sched/em_ipset.ko /lib/modules/${KERNEL_VERSION}.${KERNEL_REVISION}-tegra/kernel/net/sched/
-COPY --from=build /src/Linux_for_Tegra/source/public/kernel/kernel-${KERNEL_VERSION}/fs/xfs/xfs.ko /lib/modules/${KERNEL_VERSION}.${KERNEL_REVISION}-tegra/kernel/fs/xfs/
+COPY --from=build /target/ /
