@@ -15,6 +15,7 @@ ENV CROSS_COMPILE_AARCH64=/sdk/bin/aarch64-buildroot-linux-gnu-
 COPY tegra_defconfig_extra ./
 RUN cat tegra_defconfig_extra >> ./kernel/kernel-5.10/arch/arm64/configs/tegra_defconfig
 RUN echo 'CONFIG_EFI=y' >> ./kernel/kernel-5.10/arch/arm64/configs/tegra_defconfig
+RUN echo 'CONFIG_EFI_STUB=y' >> ./kernel/kernel-5.10/arch/arm64/configs/tegra_defconfig
 RUN ./nvbuild.sh
 ENV INSTALL_MOD_PATH=/target
 RUN mkdir -p /target/boot
